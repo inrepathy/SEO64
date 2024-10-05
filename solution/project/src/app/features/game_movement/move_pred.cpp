@@ -97,7 +97,7 @@ bool MovePred::setupMoveData(C_TFPlayer *const pl, CMoveData *const move_data, c
 	return true;
 }
 
-bool MovePred::setupMoveData(C_TFPlayer *const pl, CUserCmd *const cmd, CMoveData *const move_data, const bool ignore_special_ability)
+bool MovePred::setupMoveData(C_TFPlayer* const pl, CUserCmd* const cmd, CMoveData* const move_data, const bool ignore_special_ability)
 {
 	i::pred->SetupMove(pl, cmd, i::move_helper, move_data);
 
@@ -106,24 +106,26 @@ bool MovePred::setupMoveData(C_TFPlayer *const pl, CUserCmd *const cmd, CMoveDat
 
 	if (cfg::aimbot_strafe_pred)
 	{
-		const size_t num_recs{ 5ull };
+		const size_t num_recs = 5;
 
 		if (player_data->getNumValidRecords(pl) >= num_recs)
 		{
-			std::vector<vec3> points{};
+			std::vector<vec3> points;
+			points.reserve(num_recs);
 
-			for (size_t n{}; n < num_recs; n++)
+			for (size_t n = 0; n < num_recs; ++n)
 			{
-				const LagRecord *const lr{ player_data->getRecord(pl, n) };
-
-				if (lr && lr->isRecordValid()) {
+				const LagRecord* lr = player_data->getRecord(pl, n);
+				if (lr && lr->isRecordValid())
+				{
 					points.push_back(lr->origin);
 				}
 			}
 
-			if (strafe_pred->calc(points, move_data->m_vecVelocity.length2D(), m_yaw_per_tick))
+			if (!points.empty() && strafe_pred->calc(points, move_data->m_vecVelocity.length2D(), m_yaw_per_tick))
 			{
-				if (!(pl->m_fFlags() & FL_ONGROUND) && pl->m_nWaterLevel() <= WL_Feet) {
+				if (!(pl->m_fFlags() & FL_ONGROUND) && pl->m_nWaterLevel() <= WL_Feet)
+				{
 					m_air_strafing = true;
 					move_data->m_flForwardMove = 0.0f;
 					move_data->m_flSideMove = (m_yaw_per_tick > 0.0f) ? -450.0f : 450.0f;
@@ -137,6 +139,7 @@ bool MovePred::setupMoveData(C_TFPlayer *const pl, CUserCmd *const cmd, CMoveDat
 
 	return true;
 }
+
 
 bool MovePred::init(C_TFPlayer *const pl, const bool ignore_special_ability)
 {
