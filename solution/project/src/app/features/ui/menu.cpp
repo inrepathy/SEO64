@@ -15,7 +15,7 @@ void Menu::run()
 		return;
 	}
 
-	if (ImGui::Begin("seo64", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar))
+	if (ImGui::Begin("seo64", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize))
 	{
 		ImGui::SetWindowSize({ 600.0f, 460.0f }, ImGuiCond_::ImGuiCond_Once);
 
