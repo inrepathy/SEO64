@@ -194,46 +194,46 @@ bool AimbotProjectile::getProjInfo(C_TFPlayer *const local, C_TFWeaponBase *cons
 	}
 }
 
-bool AimbotProjectile::calcProjAngle(const vec3 &from, const vec3 &to, const ProjectileInfo &proj_info, vec3 &ang_out, float &t_out)
+bool AimbotProjectile::calcProjAngle(const vec3& from, const vec3& to, const ProjectileInfo& proj_info, vec3& ang_out, float& t_out)
 {
-	if (proj_info.m_gravity_mod)
-	{
-		const vec3 v{ to - from };
-		const float dx{ sqrtf(v.x * v.x + v.y * v.y) };
-		const float dy{ v.z };
-		const float v0{ proj_info.m_speed };
-		const float g{ tf_utils::getGravity() * proj_info.m_gravity_mod };
+	const vec3 v = to - from;
+	const float dx = sqrtf(v.x * v.x + v.y * v.y); 
+	const float dy = v.z; 
+	const float g = tf_utils::getGravity() * proj_info.m_gravity_mod; 
 
-		const float root{ v0 * v0 * v0 * v0 - g * (g * dx * dx + 2.0f * dy * v0 * v0) };
-
+	auto calculateAngleAndTime = [&](float speed, float dx, float dy, float g, vec3& ang_out, float& t_out) -> bool {
+		const float root = speed * speed * speed * speed - g * (g * dx * dx + 2.0f * dy * speed * speed);
 		if (root < 0.0f) {
 			return false;
 		}
 
-		ang_out = { -math::radToDeg(atanf((v0 * v0 - sqrtf(root)) / (g * dx))), math::radToDeg(atan2f(v.y, v.x)), 0.0f };
-		t_out = dx / (cosf(-math::degToRad(ang_out.x)) * v0);
+		ang_out = {
+			-math::radToDeg(atanf((speed * speed - sqrtf(root)) / (g * dx))),
+			math::radToDeg(atan2f(v.y, v.x)), 
+			0.0f
+		};
+		t_out = dx / (cosf(-math::degToRad(ang_out.x)) * speed);
+		return true;
+		};
 
-		//TODO: use dist instead of time to avoid this mess (?)
+	if (proj_info.m_gravity_mod)
+	{
+		if (!calculateAngleAndTime(proj_info.m_speed, dx, dy, g, ang_out, t_out)) {
+			return false; 
+		}
+
 		if (proj_info.m_drag_mod)
 		{
-			const float v0{ proj_info.m_speed - ((proj_info.m_speed * t_out) * proj_info.m_drag_mod) };
-			const float root{ v0 * v0 * v0 * v0 - g * (g * dx * dx + 2.0f * dy * v0 * v0) };
-
-			if (root < 0.0f) {
+			const float adjusted_speed = proj_info.m_speed - ((proj_info.m_speed * t_out) * proj_info.m_drag_mod);
+			if (!calculateAngleAndTime(adjusted_speed, dx, dy, g, ang_out, t_out)) {
 				return false;
 			}
 
-			ang_out = { -math::radToDeg(atanf((v0 * v0 - sqrtf(root)) / (g * dx))), math::radToDeg(atan2f(v.y, v.x)), 0.0f };
-			t_out = dx / (cosf(-math::degToRad(ang_out.x)) * v0);
-
-			vec3 forward{};
-			vec3 up{};
-
+			vec3 forward, up;
 			math::angleVectors(ang_out, &forward, nullptr, &up);
-			math::vectorAngles((forward * proj_info.m_speed) - (up * 200.0f), ang_out);
+			math::vectorAngles((forward * adjusted_speed) - (up * 200.0f), ang_out);
 		}
 	}
-
 	else {
 		ang_out = math::calcAngle(from, to);
 		t_out = from.distTo(to) / proj_info.m_speed;
